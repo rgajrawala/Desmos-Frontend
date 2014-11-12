@@ -1,5 +1,5 @@
 # Desmos-Frontend
-[Desmos](https://www.desmos.com/) frontend server in node.
+[Desmos](https://www.desmos.com/) frontend server using [Node.js](http://nodejs.org/).
 <br>
 Use this local [Desmos](https://www.desmos.com/) server for offline use.
 
