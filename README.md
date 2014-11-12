@@ -12,4 +12,4 @@ Use this local [Desmos](https://www.desmos.com/) server for offline use.
 + Have fun!
 
 ### Credits
-All code in [assets](./assets) belongs to [Desmos](https://www.desmos.com/).
+All files in [assets](./assets) belong to [Desmos](https://www.desmos.com/).
