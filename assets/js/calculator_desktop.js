@@ -11352,157 +11352,6 @@ var UnderscoreModel = P(function (model) {
 return UnderscoreModel;
 });
 
-define('main/account_backend',['require','jquery'],function(require){
-  var $ = require('jquery');
-
-  var accountBackend = {
-    logout: function () { return $.post('/account/logout_xhr'); },
-
-    fetchUser: function (formData) {
-      var login = function () {
-        return $.post('/account/login_xhr', formData);
-      };
-
-      // do a logout before a login so that cookies are set correctly
-      return this.logout().then(login, login).then(this.getUserInfo);
-    },
-
-    getUserInfo: function () { return $.getJSON('/account/user_info'); },
-
-    registerUser: function (formData) {
-      return $.post('/account/register_xhr', formData).then(this.getUserInfo);
-    },
-
-    editAccount: function (formData) {
-      return $.post('/account/edit_account_xhr', formData).then(
-        this.getUserInfo
-      );
-    },
-
-    recoverPassword: function (formData) {
-      return $.post('/account/recover_xhr', formData);
-    }
-  };
-
-  return accountBackend;
-});
-
-define('main/user',['require','pjs','underscore_model'],function(require){
-  var P = require('pjs');
-  var UnderscoreModel = require('underscore_model');
-
-  var User = P(UnderscoreModel, function (proto, _super) {
-    var properties = ['name', 'email', 'isDriveUser', 'isCleverUser'];
-
-    proto.init = function (obj) {
-      _super.init.call(this);
-      var self = this;
-
-      if (obj) {
-        properties.forEach(function (p) {
-          if (obj.hasOwnProperty(p)) self.setProperty(p, obj[p]);
-        });
-      }
-    };
-
-    //this is sort of copied from account_email.py for guessing what people's first name is
-    //we use this as the display name in header_desktop.js
-    proto.firstName = function() {
-      if (!this.name) return null;
-
-      //regex for their inclusion of weird characters in their name -- that means it's probably
-      //like an e-mail address, or a username or "Mr. blah"
-      if (this.name.match(/[\d@_&\.\']/)) return this.name;
-
-      var pieces = this.name.split(' ');
-      if (pieces[0].length >= 3) return pieces[0];
-
-      return this.name;
-    };
-
-  });
-
-  return User;
-});
-
-define('main/user_controller',['require','pjs','jquery','underscore_model','main/account_backend','main/user'],function(require){
-  var P = require('pjs');
-  var $ = require('jquery');
-  var UnderscoreModel = require('underscore_model');
-  var accountBackend = require('main/account_backend');
-  var User = require('main/user');
-
-  var UserController = P(UnderscoreModel, function (proto, _super) {
-    proto.init = function (graphsController) {
-      _super.init.call(this);
-      this.graphsController = graphsController;
-
-      //log the user out if we ever make a request and get back a 401
-      var self = this;
-      $.ajaxSetup({statusCode: {401: function() { self.logout(); }}});
-    };
-
-    proto.desmosLogin = function (formData) {
-      return accountBackend.fetchUser(formData).done(
-        this.completeLogin.bind(this)
-      );
-    };
-
-    proto.driveCallback = function () {
-      return accountBackend.getUserInfo().then(
-        this.completeLogin.bind(this),
-        this.logout.bind(this)
-      );
-    };
-
-    proto.createAccount = function (formData) {
-      return accountBackend.registerUser(formData).done(
-        this.completeLogin.bind(this)
-      ).done(function () {
-        //_kmq.push(['record', 'signed up', {'identity provider': 'desmos'}]);
-      });
-    };
-
-    proto.editAccount = function (formData) {
-      var currentUser = this.currentUser;
-      var self = this;
-      return accountBackend.editAccount(formData).done(function (msg) {
-        currentUser.setProperty('name', msg.name);
-        currentUser.setProperty('email', msg.email);
-        self.notifyPropertyChange('currentUser');
-      });
-    };
-
-    proto.recoverPassword = function (formData) {
-      return accountBackend.recoverPassword(formData);
-    };
-
-    //called at the end of the login process
-    proto.completeLogin = function (msg, source) {
-      this.setProperty('currentUser', User(msg));
-      this.graphsController.updateGraphs();
-
-      //Analytics
-      //_kmq.push(['identify', user.email]);
-      //_kmq.push(['record', 'logged in', {
-      //  'google user': user.isDriveUser,
-      //  'login remembered': source === 'load'
-      //}]);
-    };
-
-    proto.logout = function () {
-      //_kmq.push(['clearIdentity']);
-      var self = this;
-      return accountBackend.logout().done(function() {
-        self.setProperty('currentUser', null);
-        self.graphsController.clear();
-      });
-    };
-  });
-
-  return UserController;
-});
-
 define('main/url_prefix',['require'],function(require){
   var URL_PREFIX = '/';
   // if we're on the file:// protocol we don't want to look at pathname. It'll
@@ -13356,10 +13205,9 @@ define('main/modals_controller',['require','console','jquery','pjs','underscore_
 
 var ModalsController = P(function (c) {
 
-  c.init = function (userController, graphsController) {
+  c.init = function (graphsController) {
     this.modals = {
       unsupportedBrowserDialog: UnsupportedBrowserDialog(
-        userController,
         graphsController,
         this
       )
@@ -13416,13 +13264,12 @@ var ModalsController = P(function (c) {
 
 var ModalDialogView = P(UnderscoreView, function (view, _super) {
 
-  view.init = function (userController, graphsController, modalsController) {
+  view.init = function (graphsController, modalsController) {
     _super.init.call(this);
     this.errors = [];
     this.spinning = false;
     this.saved_inputs = {};
     this.initialized = false;
-    this.userController = userController;
     this.graphsController = graphsController;
     this.modalsController = modalsController;
   };
@@ -14256,10 +14103,9 @@ define('main/share_options',['require','loadcss!css/share_options','jquery','und
     view.template = template;
     view.pointToSelector = '.dcg-action-share i';
 
-    view.init = function (userController, graphsController, Calc) {
+    view.init = function (graphsController, Calc) {
       _super.init.call(this);
       this.graphsController = graphsController;
-      this.userController = userController;
       this.Calc = Calc;
       this.sharePromise = $.Deferred().reject().promise();
       this.setProperty('isFeatureable', false);
@@ -14309,26 +14155,6 @@ define('main/share_options',['require','loadcss!css/share_options','jquery','und
       this.$('.dcg-action-togglefeature').on('tapstart', this.toggleFeature.bind(this));
 
       var self = this;
-      function handleUserUpdate () {
-        var user = self.userController.currentUser;
-        if (user) {
-          self.setUser({
-            name: user.name
-          });
-        } else {
-          self.setUser(null);
-        }
-      }
-
-      this.userController.observe('currentUser', function () {
-        if (self.userController.currentUser) {
-          // currentUser is null when user is signed out.
-          self.userController.currentUser.observe('name', handleUserUpdate);
-        }
-        handleUserUpdate();
-      });
-
-      handleUserUpdate();
 
       this.observeAndSync('isFeatureable', this.renderIsFeatureable.bind(this));
       this.observe('userAllowsFeature', this.renderUserAllowsFeature.bind(this));
@@ -14411,8 +14237,7 @@ define('main/share_options',['require','loadcss!css/share_options','jquery','und
       //we don't want Clever users to be able to accidentally mark graphs as public
       //since we get their name through the API and until we have explicit permission we
       //don't want to use that kind of user-identifiable information.
-      var isCleverUser = this.userController.currentUser && this.userController.currentUser.isCleverUser;
-      var isFeatureable = (graph && graph.title && !isCleverUser);
+      var isFeatureable = (graph && graph.title);
       this.setProperty('isFeatureable', isFeatureable);
     };
 
@@ -15842,14 +15667,12 @@ define('main/help_desktop',['require','loadcss!css/help','jquery','underscore','
     view.pointToSelector = '.dcg-action-help i';
 
     view.init = function (
-      userController,
       graphsController,
       Calc,
       modals,
       tourController
     ) {
       _super.init.call(this);
-      this.userController = userController;
       this.graphsController = graphsController;
       this.Calc = Calc;
       this.modals = modals;
@@ -15942,11 +15765,7 @@ define('main/help_desktop',['require','loadcss!css/help','jquery','underscore','
 
       this.setErrors([]);
       this.setProcessing(false);
-      this.setLoggedIn(!!this.userController.currentUser);
-
-      this.userController.observe('currentUser', function () {
-        self.setLoggedIn(!!self.userController.currentUser);
-      });
+      this.setLoggedIn(false);
     };
 
     view.closeSuggestion = function() {
@@ -16149,20 +15968,15 @@ define('main/account_dropdown',['require','loadcss!css/help','jquery','pjs','mai
     view.template = template;
     view.pointToSelector = '.dcg-account-link .email i';
 
-    view.init = function (userController, helpView, modals) {
+    view.init = function (helpView, modals) {
       _super.init.call(this);
 
       this.helpView = helpView;
-      this.userController = userController;
       this.modals = modals;
     };
 
     view.getTemplateParams = function (){
-      if (this.userController.currentUser) return  {
-        name: this.userController.currentUser.name,
-        email: this.userController.currentUser.email
-      };
-      else return {
+      return {
         name: null,
         email: null
       };
@@ -16174,7 +15988,6 @@ define('main/account_dropdown',['require','loadcss!css/help','jquery','pjs','mai
     };
 
     view.logout = function () {
-      this.userController.logout();
       this.closePopover();
     };
 
@@ -16200,8 +16013,6 @@ define('main/account_dropdown',['require','loadcss!css/help','jquery','pjs','mai
       this.$('.dcg-action-logout').on('tap', this.logout.bind(this));
       this.$('.dcg-action-feedback').on('tap', this.feedback.bind(this));
       this.$('.dcg-action-editaccount').on('tap', this.editAccount.bind(this));
-
-      this.userController.observe('currentUser', this.rerender.bind(this));
     };
 
   });
@@ -16318,13 +16129,11 @@ define('mygraphs/model',['require','loadcss!css/mygraphs','pjs','underscore_mode
 
   var MyGraphsModel = P(UnderscoreModel, function (model, _super) {
 
-    //note: userController can be null, in which case we don't render the login box (logic controlled by view)
-    model.init = function (exampleGraphs, graphsController, userController) {
+    model.init = function (exampleGraphs, graphsController) {
       _super.init.call(this);
       var self = this;
 
       this.graphsController = graphsController;
-      this.userController = userController;
       this.__items = [];
       this.__selectedItem = null;
       this.filteredItemCount = 0;
@@ -59505,11 +59314,7 @@ define('mygraphs/view',['require','loadcss!css/mygraphs','jquery','underscore','
       this.model.observe('selectedItem', this.onSelectedItemChange.bind(this));
       this.model.observe('searchQuery', this.onSearchQueryChange.bind(this));
 
-      this.accountsEnabled = !!this.model.userController;
-
-      if (this.accountsEnabled) {
-        this.model.userController.observe('currentUser', this.renderLayout.bind(this));
-      }
+      this.accountsEnabled = false;
 
       this.model.observe('isSpinning searchQuery filteredItemCount', this.renderLayout.bind(this));
 
@@ -59710,7 +59515,7 @@ define('mygraphs/view',['require','loadcss!css/mygraphs','jquery','underscore','
       // exit early if the dom isn't created yet
       if (!this.$()[0]) return;
 
-      var userIsLoggedIn = !!(this.accountsEnabled && this.model.userController.currentUser);
+      var userIsLoggedIn = !!(this.accountsEnabled && false);
       var isSpinning = !!this.model.isSpinning;
 
       //show login options. no-op on tablet because login-reminder doesn't exist in the DOM
@@ -60008,25 +59813,21 @@ define('main/header_desktop',['require','console','loadcss!css/header_desktop','
     view.$saveBtn = null;
 
     view.init = function (
-      userController,
       graphsController,
       Calc,
       modals,
       tourController
     ) {
       _super.init.call(this);
-      this.userController = userController;
       this.graphsController = graphsController;
       this.Calc = Calc;
       this.modals = modals;
 
       this.shareView = ShareView(
-        userController,
         graphsController,
         Calc
       );
       this.helpView = HelpView(
-        userController,
         graphsController,
         Calc,
         modals,
@@ -60034,12 +59835,12 @@ define('main/header_desktop',['require','console','loadcss!css/header_desktop','
       );
 
       this.languageView = LanguageView(Calc);
-      this.myGraphsModel = MyGraphsModel(myGraphExamples, graphsController, userController);
+      this.myGraphsModel = MyGraphsModel(myGraphExamples, graphsController);
       this.myGraphsView = MyGraphsView(this.myGraphsModel, Calc, modals);
 
 
       //needs helpview to be able to open up the feedback box
-      this.accountView = AccountView(userController, this.helpView, modals);
+      this.accountView = AccountView(this.helpView, modals);
 
       this.childViews = [
         this.shareView,
@@ -60099,7 +59900,6 @@ define('main/header_desktop',['require','console','loadcss!css/header_desktop','
       this.graphsController.observe('currentGraph', function () {
         self.updateTitle();
       });
-      this.userController.observe('currentUser', this.rerender.bind(this));
 
       this.observe('graphChanged', this.renderGraphChanged.bind(this));
       this.renderGraphChanged();
@@ -60117,10 +59917,9 @@ define('main/header_desktop',['require','console','loadcss!css/header_desktop','
     };
 
     view.getTemplateParams = function (){
-      var name = (this.userController.currentUser ? this.userController.currentUser.firstName() : null);
+      var name = null;
       return  {
         IS_ANDROID: Browser.IS_ANDROID,
-        user: this.userController.currentUser,
         name: name,
         maintenance: Config.get('maintenance'),
         previewMode: Config.get('previewMode'),
@@ -60138,15 +59937,7 @@ define('main/header_desktop',['require','console','loadcss!css/header_desktop','
     //this can be called by ctrl-S or by clicking the save icon
     //it executes the save, but doesn't pop up the dialog unless it's your first save
     view.simpleSave = function () {
-      if (this.userController.currentUser &&
-          this.graphsController.currentGraph.hasOwnProperty('title')
-      ) {
-        // Already saved, so don't bother with the dialog
-        //TODO is there a better way of detecting this?
-        this.graphsController.save(this.graphsController.currentGraph);
-      } else {
         this.saveDialog();
-      }
     };
 
     // TODO - switch from keyCode to something that identifies which keys we're talking about.
@@ -60175,11 +59966,7 @@ define('main/header_desktop',['require','console','loadcss!css/header_desktop','
       }
     };
     view.saveDialog = function() {
-      if (this.userController.currentUser) {
-        this.modals.saveDialog.show();
-      } else {
-        this.modals.createAccountDialog.showThenSave();
-      }
+      this.modals.createAccountDialog.showThenSave();
     };
 
     view.saveStart = function() {
@@ -67903,14 +67690,14 @@ define('main/log_errors',['require','jquery'],function(require){
   });
 });
 
-define('main/calc_desktop',['require','jquery','config','main/load_data','main/user_controller','main/graphs_controller','main/graph','main/modals_controller','main/header_desktop','main/tour_controller','main/preserved_state','main/graph_change_monitor','browser','main/data_helpers','ipad.scrollfix','locales/all','i18n','api/calculator','main/betchacant','main/heartbeat','main/log_errors'],function (require) {
+define('main/calc_desktop',['require','jquery','config','main/load_data','main/graphs_controller','main/graph','main/modals_controller','main/header_desktop','main/tour_controller','main/preserved_state','main/graph_change_monitor','browser','main/data_helpers','ipad.scrollfix','locales/all','i18n','api/calculator','main/betchacant','main/heartbeat','main/log_errors'],function (require) {
+
 
   var $ = require('jquery');
   var Config = require('config');
   var LOAD_DATA = require('main/load_data');
 
   //these manage the user and the loaded graph (graph hash, etc)
-  var UserController = require('main/user_controller');
   var GraphsController = require('main/graphs_controller');
   var Graph = require('main/graph');
 
@@ -68025,15 +67812,10 @@ define('main/calc_desktop',['require','jquery','config','main/load_data','main/u
     Calc._calc.toast(str, {undoCallback: function() {}});
   });
 
-  var userController = UserController(graphsController);
-  //we need this on the window for tests
-  window.userController = userController;
-
-  var modalsController = ModalsController(userController, graphsController);
+  var modalsController = ModalsController(graphsController);
   var modals = modalsController.modals;
 
   var headerView = HeaderView(
-    userController,
     graphsController,
     Calc,
     modals,
@@ -68098,19 +67880,11 @@ define('main/calc_desktop',['require','jquery','config','main/load_data','main/u
     //Show warning modal for unsupported browsers (because of screensize, for example)
     if (Browser.IS_ANDROID && !Browser.IS_CHROME) {
       modals.unsupportedBrowserDialog.show();
-    } else if (
-      !userController.currentUser &&
-      document.location.search.match(/(\?|\&)create_account/)
-    ) {
-        modals.createAccountDialog.show();
     }
 
     // headerView.appendTo('.dcg-header');
 
     $('.dcg-loading-div').fadeOut();
-
-    // Process LOAD_DATA
-    if (LOAD_DATA.user) userController.completeLogin(LOAD_DATA.user, 'load');
 
     if (LOAD_DATA.flash) {
       switch (LOAD_DATA.flash) {
@@ -68164,8 +67938,7 @@ define('main/calc_desktop',['require','jquery','config','main/load_data','main/u
 
 
 requirejs(['main/calc_desktop'], function (Calc) {
-  // Calc global has singletons like expressions and userController that are
-  // useful for debugging and testing.
+  // Calc global has singletons like expressions that are useful for debugging and testing.
   window.Calc = Calc;
 });
 
