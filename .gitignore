@@ -29,3 +29,8 @@ node_modules
 
 # OSX
 .DS_Store
+
+# Sublime Text
+.sbl
+*.sublime-project
+*.sublime-workspace
