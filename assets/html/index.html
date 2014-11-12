@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html no_gl="true">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0" />
+		<!--chrome=1 enables chrome frame; IE=9 keeps IE from rendering in fallback mode.-->
+		<meta http-equiv="X-UA-Compatible" content="chrome=1" />
+		<meta name="Description" content="A beautiful, free, online graphing calculator from desmos.com" />
+		<meta property="og:site_name" content="Desmos Graphing Calculator" />
+		<meta property="og:image" content="https://s3.amazonaws.com/desmos/img/calc_thumb.png" />
+		<link rel="image_src" href="https://s3.amazonaws.com/desmos/img/calc_thumb.png" />
+		<!--[if lt IE 10 ]>
+			<link rel="stylesheet" href="ie9.css" />
+			<meta http-equiv="X-UA-Compatible" content="IE=9, chrome=1" />
+		<![endif]-->
+		<link rel="stylesheet" href="/css/grapher.css" />
+		<title>Desmos Graphing Calculator</title>
+		<link rel="apple-touch-icon-precomposed" sizes="57x57" href="/img/apple-icon-57x57-precomposed.png" />
+		<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/img/apple-icon-72x72-precomposed.png" />
+		<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/img/apple-icon-114x114-precomposed.png" />
+		<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/img/apple-icon-144x144-precomposed.png" />
+	</head>
+	<body data-load-data="{&#34;graph&#34;: null, &#34;seed&#34;: &#34;e3636b05148b4955b9a12f202a3512f1&#34;, &#34;user&#34;: null}" class="dcg-tap-container">
+		<!-- LOGIN MODALS -->
+		<div id="modal_background"></div>
+		<div class="modal" id="state-modals">
+			<span class="close-modal dcg-icon-remove"></span>
+		</div>
+		<!-- GRAPHER -->
+		<div class="dcg-sliding-interior">
+			<!-- this is where the tools go. leaving div in because I like it aesthetically during load-up -->
+			<!-- <div class="dcg-header"></div> -->
+			<div style="position:absolute; top:50%; width:100%; text-align:center" class="dcg-loading-div"> loading... </div>
+			<div id="graph-container"></div>
+		</div>
+		<!-- 1pixel white image for printing in FF -->
+		<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAAXNSR0IArs4c6QAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wLEhYhKmtn2wYAAAAidEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVAgb24gYSBNYWOHqHdDAAAADElEQVQI12P4//8/AAX+Av7czFnnAAAAAElFTkSuQmCC" id="whitebg">
+		<!-- 1 white pixel for printing in FF -->
+		<script src="/js/calculator_desktop.js"></script>
+	</body>
+</html>

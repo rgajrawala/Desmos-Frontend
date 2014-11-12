@@ -1,0 +1,29 @@
+{
+  "name": "Desmos-Frontend-Server",
+  "version": "1.0.0",
+  "description": "Desmos frontend server in node.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"It works!\"",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/usandfriends/Desmos-Frontend.git"
+  },
+  "keywords": [
+    "desmos",
+    "frontend",
+    "graphing",
+    "calculator"
+  ],
+  "author": "Usandfriends",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/usandfriends/Desmos-Frontend/issues"
+  },
+  "homepage": "https://github.com/usandfriends/Desmos-Frontend",
+  "dependencies": {
+    "express": "^4.10.2"
+  }
+}
