@@ -43268,32 +43268,6 @@ define('expressions/add_expression',['require','loadcss!css/add_expression','jqu
   return AddExpressionView;
 });
 
-define('analytics/google_analytics',['require','config'],function(require){
-  var Config = require('config');
-  var enabled = false;
-
-  return {
-    init: function(accountId) {
-      if (enabled) return;
-
-      // Initialize google analytics
-      window._gaq = window._gaq || [];
-      _gaq.push(['_setAccount', accountId]);
-      _gaq.push(['_trackPageview']);
-      enabled = true;
-
-      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-    },
-    send: function(evt) {
-      //noop until init has been called
-      if (!enabled) return;
-      _gaq.push(evt);
-    }
-  };
-});
-
 define('scroll_helpers',['require'],function (require) {
   //this ensures that innerEl is visible inside of outerEl by scrolling outerEl
   //padding is the space we want to enforce on either side, if available
@@ -43374,13 +43348,12 @@ define('expressions/new_expression',['require','loadcss!css/new_expression','pjs
   return NewExpressionView;
 });
 
-define('expressions/abstract_icon',['require','jquery','underscore_view','pjs','keys','i18n','analytics/google_analytics'],function(require){
+define('expressions/abstract_icon',['require','jquery','underscore_view','pjs','keys','i18n'],function(require){
   var $ = require('jquery');
   var UnderscoreView = require('underscore_view');
   var P = require('pjs');
   var Keys = require('keys');
   var i18n = require('i18n');
-  var ga = require('analytics/google_analytics');
 
   var icon_count = 0;
 
@@ -43438,13 +43411,6 @@ define('expressions/abstract_icon',['require','jquery','underscore_view','pjs','
       }
 
       this.optionsShown = true;
-
-      //to do: track if this is an image, table, or expression?
-      if (this.parentView.listView && this.parentView.listView.editListMode) {
-        ga.send(['_trackEvent', 'edit-list-mode', 'options shown from edit mode']);
-      } else {
-        ga.send(['_trackEvent', 'edit-list-mode', 'options shown from long hold']);
-      }
 
       // Add options menu to .dcg-main. workaround bug with "-webkit-scrolling-overflow: touch" and child "position:
       // relative" elements not respecting z-index
@@ -50485,7 +50451,7 @@ define('expressions/abstractitem_view',['require','pjs','jquery','underscore_vie
   return AbstractItemView;
 });
 
-define('expressions/expression_view',['require','jquery','pjs','./expression_icon_view','expressions/evaluation','expressions/unresolved','expressions/domain_view','expressions/regression_view','expressions/slider_view','expressions/promptslider_view','./expression','graphing/columnmode','i18n','conditional_blur','analytics/google_analytics','./text','./table','mathquill','jquery.handleevent','keys','template!expression_item','expressions/abstractitem_view'],function (require) {
+define('expressions/expression_view',['require','jquery','pjs','./expression_icon_view','expressions/evaluation','expressions/unresolved','expressions/domain_view','expressions/regression_view','expressions/slider_view','expressions/promptslider_view','./expression','graphing/columnmode','i18n','conditional_blur','./text','./table','mathquill','jquery.handleevent','keys','template!expression_item','expressions/abstractitem_view'],function (require) {
   var $ = require('jquery');
   var P = require('pjs');
   var ExpressionIconView = require('./expression_icon_view');
@@ -50499,7 +50465,6 @@ define('expressions/expression_view',['require','jquery','pjs','./expression_ico
   var COLUMNMODE = require('graphing/columnmode');
   var i18n = require('i18n');
   var conditionalBlur = require('conditional_blur');
-  var ga = require('analytics/google_analytics');
 
   //For convert-to text and convert-to-table
   var TextObject = require('./text');
@@ -50863,8 +50828,6 @@ define('expressions/expression_view',['require','jquery','pjs','./expression_ico
 
     view.onDuplicateWithoutFocus = function() {
 
-      ga.send(['_trackEvent', 'edit-list-mode', 'duplicate used']);
-
       var index = this.model.index;
       var state = this.model.getState();
       state.selected = false;
@@ -50975,7 +50938,6 @@ define('expressions/expression_view',['require','jquery','pjs','./expression_ico
     };
 
     view.onCreateTable = function () {
-      ga.send(['_trackEvent', 'edit-list-mode', 'convert to table use']);
 
       var formula = this.model.formula;
 
@@ -51020,7 +50982,6 @@ define('expressions/expression_view',['require','jquery','pjs','./expression_ico
       var listView = this.listView;
       var folderId = (this.model.folder ? this.model.folder.id : null);
       listView.setProperty('editListMode', false);
-      ga.send(['_trackEvent', 'edit-list-mode', 'exit edit list from convert to table']);
 
       list.undoRedo.oneTransaction(function(){
         if (!table_info.by_reference) {
@@ -51621,7 +51582,7 @@ __p+='<div class="dcg-cell dcg-table-header">\n  <div class="dcg-inner-border"><
 }
 return __p;
 };});
-define('expressions/table_view',['require','loadcss!css/expressions.table','jquery','underscore','pjs','underscore_view','mathquill','jquery.handleevent','keys','conditional_blur','i18n','./abstractitem_view','./table_icon_view','analytics/google_analytics','template!table','template!table_cell_body','template!table_cell_header'],function(require) {
+define('expressions/table_view',['require','loadcss!css/expressions.table','jquery','underscore','pjs','underscore_view','mathquill','jquery.handleevent','keys','conditional_blur','i18n','./abstractitem_view','./table_icon_view','template!table','template!table_cell_body','template!table_cell_header'],function(require) {
   require('loadcss!css/expressions.table');
   var $ = require('jquery');
   var _ = require('underscore');
@@ -51635,7 +51596,6 @@ define('expressions/table_view',['require','loadcss!css/expressions.table','jque
 
   var AbstractItemView = require('./abstractitem_view');
   var TableIconView = require('./table_icon_view');
-  var ga = require('analytics/google_analytics');
 
   var templates = {};
 
@@ -52488,7 +52448,6 @@ define('expressions/table_view',['require','loadcss!css/expressions.table','jque
         self.$mathquill.mathquill('clearSelection');
       });
       this.$().on('tap', '.dcg-action-removecolumn', function () {
-        ga.send(['_trackEvent', 'edit-list-mode', 'delete table column']);
         self.model.table.removeColumn(self.model.index);
       });
       this.$().on('render', '.mathquill-rendered-math', function () {
@@ -53447,7 +53406,7 @@ __p+='<div>\n\n<div class=\'dcg-show-expressions-tab\'>\n  <a\n    class=\'dcg-r
 }
 return __p;
 };});
-define('expressions/list_view',['require','loadcss!css/expression_top_bar','loadcss!css/expressions','loadcss!css/expressions.icon','jquery','underscore','pjs','tipsy','underscore_view','touchtracking','expressions/dragdrop_expressions','./add_expression','conditional_blur','analytics/google_analytics','keys','browser','scroll_helpers','jquery.handleevent','./new_expression','./expression','./expression_view','./text_view','./table_view','./folder_view','./image_view','template!list'],function (require) {
+define('expressions/list_view',['require','loadcss!css/expression_top_bar','loadcss!css/expressions','loadcss!css/expressions.icon','jquery','underscore','pjs','tipsy','underscore_view','touchtracking','expressions/dragdrop_expressions','./add_expression','conditional_blur','keys','browser','scroll_helpers','jquery.handleevent','./new_expression','./expression','./expression_view','./text_view','./table_view','./folder_view','./image_view','template!list'],function (require) {
   require('loadcss!css/expression_top_bar');
   require('loadcss!css/expressions');
   require('loadcss!css/expressions.icon');
@@ -53461,7 +53420,6 @@ define('expressions/list_view',['require','loadcss!css/expression_top_bar','load
   var DragDropExpressions = require('expressions/dragdrop_expressions');
   var AddExpressionView = require('./add_expression');
   var conditionalBlur = require('conditional_blur');
-  var ga = require('analytics/google_analytics');
   var Keys = require('keys');
   var Browser = require('browser');
 
@@ -53992,7 +53950,6 @@ define('expressions/list_view',['require','loadcss!css/expression_top_bar','load
             $(evt.target).closest('.dcg-expression-top-bar').length === 0
           ) {
             self.setProperty('editListMode', false);
-            ga.send(['_trackEvent', 'edit-list-mode', 'exit edit list by clicking outside']);
           }
         });
       } else {
@@ -54026,7 +53983,6 @@ define('expressions/list_view',['require','loadcss!css/expression_top_bar','load
       // in case we're in list mode, get out of it!
       if (!inMathInput && (inMathquill || inEditableMathquill || inText || inFolder)) {
         this.setProperty('editListMode', false);
-        ga.send(['_trackEvent', 'edit-list-mode', 'exit edit list from focusing exp']);
       }
 
       //itemFocused should only trigger when we're editing mathquill.
@@ -54176,13 +54132,7 @@ define('expressions/list_view',['require','loadcss!css/expression_top_bar','load
       this.$exps.on('focusout', this.onFocusOut.bind(this));
       this.$exps.on('focusin',  this.onFocusIn.bind(this));
       this.$('.dcg-action-toggle-edit').on('tap', function () {
-        if (self.editListMode) {
-          ga.send(['_trackEvent', 'edit-list-mode', 'manual exit edit list']);
-        } else {
-          ga.send(['_trackEvent', 'edit-list-mode', 'enter edit list']);
-        }
         self.setProperty('editListMode', !self.editListMode);
-
       });
       this.$('.dcg-action-hideexpressions').on('tap', this.hideExpressions.bind(this));
       this.$('.dcg-action-showexpressions').on('tap', this.showExpressions.bind(this));
@@ -67912,8 +67862,7 @@ define('main/betchacant',['require','loadcss!css/mygraphs','pjs','main/graph','t
   return betchaCant;
 });
 
-define('main/heartbeat',['require','analytics/google_analytics','jquery'],function(require){
-  var ga = require('analytics/google_analytics');
+define('main/heartbeat',['require','jquery'],function(require){
   var pageload_timestamp = new Date();
   var $ = require('jquery');
 
@@ -67923,7 +67872,6 @@ define('main/heartbeat',['require','analytics/google_analytics','jquery'],functi
     //Low resolution since google analytics only allows 500 events per user-session
     var n = Math.round((new Date() - pageload_timestamp) / (60 * 1000));
     var eventName = 'Heartbeat' + (wasActiveInInterval ? '-active' : '-passive');
-    ga.send(['_trackEvent', eventName, n + ' minutes']);
     wasActiveInInterval = false;
   }
 
@@ -67936,14 +67884,12 @@ define('main/heartbeat',['require','analytics/google_analytics','jquery'],functi
 });
 
 
-define('main/log_errors',['require','jquery','analytics/google_analytics'],function(require){
+define('main/log_errors',['require','jquery'],function(require){
   var $ = require('jquery');
-  var ga = require('analytics/google_analytics');
 
   // use google analytics to log client javascript errors
   window.onerror = function(message, file, line) {
      var sFormattedMessage = '[' + file + ' (' + line + ')] ' + message;
-     ga.send(['_trackEvent', 'Exceptions', 'Application', sFormattedMessage, null, true]);
   };
 
   // Also log ajax errors
@@ -67954,11 +67900,10 @@ define('main/log_errors',['require','jquery','analytics/google_analytics'],funct
         settings.type + ' ' + window.location.protocol + '//' + window.location.host + settings.url +
         ' ' + request.status + ' (' + request.statusText + ')'
       );
-      ga.send(['_trackEvent', 'Exceptions', 'Ajax', sFormattedMessage, null, true]);
   });
 });
 
-define('main/calc_desktop',['require','jquery','config','main/load_data','main/user_controller','main/graphs_controller','main/graph','main/modals_controller','main/header_desktop','main/tour_controller','main/preserved_state','main/graph_change_monitor','browser','main/data_helpers','ipad.scrollfix','locales/all','i18n','analytics/google_analytics','api/calculator','main/betchacant','main/heartbeat','main/log_errors'],function (require) {
+define('main/calc_desktop',['require','jquery','config','main/load_data','main/user_controller','main/graphs_controller','main/graph','main/modals_controller','main/header_desktop','main/tour_controller','main/preserved_state','main/graph_change_monitor','browser','main/data_helpers','ipad.scrollfix','locales/all','i18n','api/calculator','main/betchacant','main/heartbeat','main/log_errors'],function (require) {
 
   var $ = require('jquery');
   var Config = require('config');
@@ -67992,11 +67937,6 @@ define('main/calc_desktop',['require','jquery','config','main/load_data','main/u
   var i18n = require('i18n');
   var lang = i18n.detectLanguage();
   i18n.init(lang, i18n_dict);
-
-  var ga = require('analytics/google_analytics');
-  if (!Config.get('testing')) {
-   ga.init('UA-22127755-1');
-  }
 
   //load up and insert the calculator!
   var CalcAPI = require('api/calculator');
